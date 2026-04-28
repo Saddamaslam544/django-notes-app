@@ -13,6 +13,8 @@ IMAGE_TAG: latest
 jobs:
 build-and-push:
 runs-on: ubuntu-latest
+
+```
 steps:
   - name: Checkout Source Code
     uses: actions/checkout@v4
@@ -40,3 +42,4 @@ steps:
     run: |
       docker push \
       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+```
