@@ -1,4 +1,4 @@
-name: Django CI/CD to ECR
+name: Build and Push Django Image to ECR
 
 on:
 push:
@@ -12,12 +12,9 @@ IMAGE_TAG: latest
 
 jobs:
 build-and-push:
-name: Build & Push to ECR
 runs-on: ubuntu-latest
-
-```
 steps:
-  - name: Checkout Code
+  - name: Checkout Source Code
     uses: actions/checkout@v4
 
   - name: Configure AWS Credentials
@@ -34,7 +31,7 @@ steps:
     run: |
       docker build -t $ECR_REPOSITORY .
 
-  - name: Tag Image
+  - name: Tag Docker Image
     run: |
       docker tag $ECR_REPOSITORY:latest \
       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
@@ -43,33 +40,3 @@ steps:
     run: |
       docker push \
       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-```
-
-deploy:
-name: Deploy to EC2
-runs-on: ubuntu-latest
-needs: build-and-push
-
-```
-steps:
-  - name: SSH into EC2 & Deploy
-    uses: appleboy/ssh-action@v1.0.3
-    with:
-      host: ${{ secrets.EC2_HOST }}
-      username: ubuntu
-      key: ${{ secrets.EC2_SSH_KEY }}
-      script: |
-        docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-
-        docker stop django-container || true
-        docker rm django-container || true
-
-        docker run -d \
-          --name django-container \
-          -p 8000:8000 \
-          -e DB_NAME=mydb \
-          -e DB_USER=root \
-          -e DB_PASSWORD=pass \
-          -e DB_HOST=db \
-          ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-```
